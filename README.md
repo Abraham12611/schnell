@@ -1,107 +1,122 @@
-# Next.js TypeScript Project
+# Schnell – Cross‑Chain FX Remittance Protocol on Ethereum & Mantle
 
-A modern web application built with Next.js and TypeScript, providing a robust foundation for scalable web development.
+*An L2-powered system for **fast, low-cost cross-chain remittances**, enabling seamless currency conversion (e.g. USDC to BUSD) across Ethereum and other chains via Mantle.*
 
-## 🚀 Features
+<p align="center">
+  <img src="https://i.ibb.co/1YHLnqMj/schnell-banner.png" alt="schnell-banner" border="0">
+</p>
 
-- **Next.js** - React framework with server-side rendering and static site generation
-- **TypeScript** - Type safety and enhanced developer experience
-- **Modern Development** - Built with the latest web development best practices
+## Table of Contents
 
-## 📋 Prerequisites
+* [Overview](#overview)
+* [Architecture & Smart Contracts](#architecture--smart-contracts)
+* [Token & Asset Flows](#token--asset-flows)
+* [Relayer and Cross-Chain Mechanics](#relayer-and-cross-chain-mechanics)
+* [Use Cases](#use-cases-and-user-stories)
 
-Before you begin, ensure you have the following installed:
-- Node.js (v18.0.0 or higher recommended)
-- npm or Yarn package manager
 
-## 🛠️ Installation
+## Overview
 
-1. Clone the repository:
-```bash
-git clone <your-repository-url>
-```
+**Schnell** is a **cross-chain foreign exchange (FX) remittance protocol** that uses Ethereum Layer-1 and the Mantle Layer-2 network to transfer value across chains **quickly and cheaply**. It allows a sender on one chain (e.g. Ethereum) to send stablecoins in one currency (e.g. USDC) and have a recipient on another chain (e.g. BNB Chain) receive an equivalent stablecoin (e.g. BUSD) with minimal fees. By leveraging Mantle’s high throughput and low costs, Schnell acts as a *bridge-and-exchange hub* where assets are **bridged to L2, converted via an on-chain FX pool, and bridged out to the destination chain**. The result is near-instant, low-cost remittances – ideal for cross-border payments and multi-chain liquidity transfers.
 
-2. Navigate to the project directory:
-```bash
-cd <project-directory>
-```
+Today’s cross-chain transfers are **fragmented, slow, and expensive**. Sending money from Ethereum to another ecosystem often requires multiple steps (bridge, swap) and high gas fees. Schnell addresses these challenges head-on:
 
-3. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
+* **Low Fees:** By conducting transfers and swaps on Mantle (an Ethereum L2), users avoid expensive Layer-1 gas costs and high exchange fees. A typical transfer using Schnell costs pennies in network fees, making **micro-remittances** practical.
+* **Fast Settlement:** Traditional bank remittances take days; even on-chain, moving across chains can be slow (especially if waiting for L1 finality). Schnell uses **fast bridge finality** (via optimistic L2 and a relayer network) to achieve transfers that complete in minutes or less.
+* **Auto FX Conversion:** Users can send value in one stablecoin and the system automatically converts it to the desired stablecoin on the target chain. This removes the burden of manual swapping and ensures recipients get the currency they need (e.g. families abroad receiving local stablecoins).
+* **Trust-Minimized:** Built on decentralized infrastructure (Ethereum and Mantle) and using on-chain liquidity pools/oracles, Schnell avoids custodial risk. The core contracts are transparent and non-custodial – funds are either in **user-owned wallets or audited smart contracts** at all times.
+* **Composable Integration:** As a protocol, Schnell can plug into wallets and dApps. A developer can integrate Schnell’s “bridge & swap” functionality via simple contract calls or API endpoints, offering their users cross-chain payouts with one click.
 
-4. Create a `.env.local` file in the root directory and add any necessary environment variables:
-```bash
-cp .env.example .env.local
-```
+**Key problems we solve:**
 
-## 🚀 Development
+* **🌍 Costly Cross-Border Payments:** Sending money internationally via banks or even mainnet crypto can incur \$20–\$50 in fees. Schnell reduces this to cents by using L2, making **\$100 transfers feasible** without exorbitant fees.
+* **⏱️ Slow Cross-Chain Settlements:** Bridging tokens between chains can take hours or days (especially if waiting through challenge periods). Schnell’s design enables much faster **end-to-end transfers**, using liquidity networks to avoid long waits.
+* **💱 Currency Mismatch:** Recipients often need funds in a different stablecoin or currency than what the sender holds. Schnell’s built-in FX pool converts assets **in one transaction**, so the receiver directly gets (for example) BUSD without extra steps.
+* **🤝 Complex User Experience:** Managing multiple exchanges and bridges is error-prone for users. Schnell provides a **single, streamlined flow** – deposit on one chain, automatic conversion, and withdrawal on the target chain – all orchestrated behind a simple interface.
 
-To start the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-```
+<img src="https://i.ibb.co/Xx6cdqrH/schnell-slide-3.png" alt="schnell-slide-3" border="0">
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
+**How it works:**
 
-## 🏗️ Building for Production
+* **For Senders:** Initiate a transfer through the Schnell dApp or API by specifying an input token (e.g. USDC on Ethereum), an output token (e.g. BUSD on BNB Chain), and the recipient’s address. The sender’s USDC is first moved to Mantle (via the Ethereum–Mantle bridge) and then swapped in-protocol for BUSD using on-chain rates. The entire process is abstracted so the sender just approves a single transaction. They pay minimal gas (thanks to L2), and get a confirmation that their USDC has been “teleported” to the destination as BUSD.
+* **For Recipients:** There is no action needed by the recipient except to provide their address and desired output currency. Once the sender initiates the transfer, the recipient will receive the target token **directly on their home chain**. For example, if the recipient is on BNB Chain expecting BUSD, Schnell’s relayers will deliver BUSD to their address. The recipient can immediately use the funds as normal – they might get a notification from their wallet (or the dApp) that “You’ve received 100 BUSD via Schnell.” The experience is akin to a direct wallet-to-wallet transfer, despite the complex cross-chain swap happening under the hood.
 
-To create a production build:
+Schnell’s novel approach leverages **Mantle’s low fees and high speed** as the transaction conduit, effectively turning cross-chain swaps into near real-time events. The protocol is composable with the broader ecosystem – using standard token contracts and bridges means it can integrate with wallets, DeFi platforms, and payment apps. Whether it’s a family sending remittances or a DeFi user reallocating liquidity, Schnell provides a **fast, fair, and seamless** way to move value across chains and currencies.
 
-```bash
-npm run build
-# or
-yarn build
-```
+## Architecture & Smart Contracts
 
-To start the production server:
+Schnell’s backend architecture combines **on-chain smart contracts** on Mantle (and Ethereum) with an **off-chain relayer network** that monitors and facilitates cross-chain events. At a high level, the system consists of:
 
-```bash
-npm run start
-# or
-yarn start
-```
+* **Ethereum Layer-1 Components:** We rely on Ethereum as the source or destination chain for value. For example, a user’s USDC on Ethereum can be locked into the official **L1→L2 bridge** and represented as USDC on Mantle. On Ethereum, we use the **Standard Bridge contracts** provided by Mantle’s Optimistic Rollup framework (inherited from Optimism’s design). We did not need to deploy new contracts on L1; instead, the protocol interfaces with Mantle’s canonical bridge (via deposit/withdraw calls) for secure fund movement.
 
-## 📁 Project Structure
+* **Mantle Layer-2 Contracts:** The core logic resides on Mantle (an optimistic L2). Our primary contract, **`SchnellFundSender`**, is deployed on Mantle and serves as the hub for token transfers and initiating cross-chain actions. Key responsibilities of this contract:
 
-```
-├── components/     # React components
-├── pages/         # Next.js pages
-├── public/        # Static assets
-├── styles/        # CSS/SCSS styles
-├── types/         # TypeScript type definitions
-└── utils/         # Utility functions
-```
+  * *Token custody & validation:* It holds a list of **supported tokens** (via a mapping) to ensure only approved stablecoins (or wrapped tokens) are used. This prevents unexpected assets or potential security risks.
+  * *L2 Transfers and Events:* Users on Mantle can call `sendFunds(token, amount, recipient)` on this contract to send tokens to another L2 address. Under the hood, `SchnellFundSender` uses OpenZeppelin **SafeERC20** to safely pull the tokens from the sender and then forwards them to the specified `_recipient` on Mantle. This triggers a **`FundsSent` event** recording the sender, recipient, token, and amount. In the simple case, this mechanism can be used to send funds to a **liquidity pool** or conversion module on Mantle in a single transaction (with the event serving as a log for off-chain monitoring).
+  * *Cross-Chain Withdrawals:* The contract also exposes `initiateWithdrawalToL1(l2Token, l1Recipient, amount, minGas, extraData)` which leverages Mantle’s **IL2StandardBridge** interface. When called, it pulls the specified `_l2Token` from the user, then calls `l2StandardBridge.withdrawTo(...)` to start transferring those tokens back to Layer-1. This is effectively a **bridge withdrawal** – e.g. converting Mantle USDC back to Ethereum USDC – directed to a given L1 recipient address. We emit a custom **`WithdrawalInitiatedOnL2` event** here, logging the L2 token, the L1 recipient, the amount, and an extra data field (which we use to encode the intended L1 token or other metadata). This event is crucial for our off-chain relayers to know that “X tokens have been withdrawn from Mantle to L1 for Y recipient.”
+  * *Admin Controls:* `SchnellFundSender` inherits OpenZeppelin **Ownable**, meaning the deployer (or a multisig) can adjust certain parameters. The owner can add or remove `supportedTokens` via `addSupportedToken()` and `removeSupportedToken()` – for example, to enable a new stablecoin on the network. We also built in safety functions for the owner to recover any unexpected Ether or token stuck in the contract (`withdrawEther` and owner ERC20 withdrawal) to handle edge cases. Importantly, the contract does **not custody user funds long-term** – it’s only a transit point to forward tokens or initiate bridge transfers.
 
-## 🧪 Testing
+* **Liquidity & FX Conversion Mechanism:** On Mantle, Schnell either connects to a **liquidity pool smart contract** or uses an off-chain service to swap tokens. In our current design (hackathon version), we assumed a simplified conversion: since USDC and BUSD are both USD-pegged, a 1:1 swap is used (with potential minor fee). We integrated the **Pyth Network price oracle** on Mantle to prepare for more complex FX rates – for instance, if converting between different currencies (USD to EUR stablecoins) or in case of peg deviations. The Pyth contract on Mantle provides real-time price feeds that our backend can fetch (e.g. `USDC-USD` price, which is usually 1.0, or other forex rates). In a future iteration, this would feed an on-chain AMM or be used in swap calculations to ensure fair conversion rates. During the hackathon, conversion logic lives off-chain for simplicity: our backend listens for the `FundsSent` event (which indicates a deposit to the pool) and then determines how much of the target token to release, using oracle data if needed. This is a design choice to expedite development, but it is framed by an intent to move fully on-chain with a dedicated **Schnell FX Pool contract**. That contract (planned) would hold liquidity for token pairs (e.g. USDC–BUSD) on Mantle and allow the `SchnellFundSender` to directly swap tokens and withdraw the output to the bridge in one atomic transaction.
 
-Run the test suite:
+* **Relayer Network & Off-Chain Services:** While not a “smart contract” per se, Schnell’s architecture includes an off-chain **Relayer Node** (or a set of them) that coordinates across chains. This backend (Node.js/Express in our prototype) connects to Mantle’s RPC and Ethereum’s RPC to monitor events and call transactions as needed. It maintains an SQLite database of transfer events for record-keeping. For example, when a `FundsSent` event is detected (perhaps indicating a user deposited USDC to the pool on Mantle), the backend can automatically trigger the corresponding **swap and withdrawal**: it might call our `initiateWithdrawalToL1` on Mantle to start bridging out the converted asset. Similarly, when a `WithdrawalInitiatedOnL2` event is observed, the Relayer Node knows an official L2->L1 withdrawal is in progress (on Ethereum) and can prepare to finalize it or use that info to kick off a transfer on the destination chain. The Relayer also exposes a simple **REST API** (e.g. `/api/price-feed/:assetPair`) that our front-end or other services can use to fetch the latest Pyth oracle prices – this was used to display conversion rates and could be extended for automated rate checking.
 
-```bash
-npm run test
-# or
-yarn test
-```
+**Smart Contract Design Highlights:**
 
-## 📚 Documentation
+* **Minimal Trust Bridge Integration:** Instead of reinventing bridging, we piggyback on Mantle’s **canonical Optimistic Bridge**. The `SchnellFundSender` holds a reference to the Mantle **L2 Standard Bridge** address (set in the constructor). This ensures that all cross-chain transfers use the battle-tested official bridge contracts. By calling `withdrawTo` on L2, we rely on Ethereum L1 to eventually receive and unlock tokens (or a message) trustlessly. This design means **Schnell inherits Ethereum’s security** for the bridging step – any fraud proofs or finality logic of Mantle apply, rather than using a less secure custom bridge.
+* **Events as Cross-Chain Signals:** We defined clear event logs (`FundsSent` and `WithdrawalInitiatedOnL2`) to serve as triggers for off-chain automation. These events include indexed parameters (addresses of sender/recipient, etc.) for efficient filtering. The off-chain relayer listens to these events via WebSockets/RPC subscriptions, enabling near-real-time responses to on-chain actions. This event-driven approach makes adding support for new chains easier – a relayer on Chain X could listen and act when it sees a relevant Schnell event.
+* **Use of SafeERC20 & Reentrancy Guards:** Our Solidity contract uses OpenZeppelin’s `SafeERC20` library for all token transfers to handle non-standard ERC20 behavior and ensure `.transferFrom`/`.transfer` calls succeed (reverting on failure). We also inherit `ReentrancyGuard` on the contract to prevent any reentrant calls in our functions (though most operations are single-step, it’s good practice as we hold tokens temporarily during a swap or withdrawal call). These measures improve the **safety and robustness** of the contract, preventing common token-handling bugs.
+* **Upgradeable and Controlled:** While the hackathon version is deployed as a single contract, we considered upgradability for future iterations (for bug fixes or adding features). The contract’s owner (currently our team’s deployer address) could be transferred to a multi-signature wallet or DAO for governance. Key parameters like supported tokens and the linked bridge address are modifiable by the owner, which provides flexibility as we integrate new chains (e.g. if Mantle’s bridge address changes or if we extend support to another L2 network with its own bridge contract). Post-hackathon, we plan to implement a proxy pattern or utilize Mantle’s upgradeable contract framework to allow seamless upgrades with community oversight.
+* **Efficiency and Cost:** All critical operations are optimized to be **gas-efficient** on L2. L2 gas is cheap, but we still aim to minimize overhead: the `sendFunds` function essentially does two transfers and emits an event, keeping computation minimal. The `initiateWithdrawalToL1` function’s heaviest lift is calling the bridge, for which we supply a reasonable `_minGasLimit` to ensure L1 execution. On Mantle testnet, we observed these functions execute quickly (a few hundred milliseconds) and cost only a tiny fraction of an MNT (Mantle’s gas token). This means the entire cross-chain swap can be done for **far less than \$0.01 in fees** on the L2 side, and on L1 the only cost is the initial deposit transaction (which we can batch or optimize for users in future).
+* **Oracle Integration (Off-Chain to On-Chain):** The inclusion of Pyth’s price feeds is forward-looking for a decentralized FX rate source. In our architecture, the backend fetches prices from the deployed Pyth contract on Mantle (using `getPriceUnsafe(feedId)` for simplicity in test environment). We map feed IDs for relevant pairs (e.g. `"USDC-USD"`, `"MNT-USD"`) and can easily extend this to dozens of currency pairs. In a fully on-chain model, our smart contract or a dedicated **PriceConsumer** contract could be permissioned to pull verified price updates from Pyth’s on-chain contract, enabling trustless execution of non-1:1 swaps. The groundwork is laid for **dynamic rate swaps** so that Schnell can handle not just stable-to-stable, but any asset conversion (subject to available liquidity). For now, oracle usage is primarily off-chain for display and calculation, but it’s an important piece for the protocol’s evolution.
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+In summary, Schnell’s architecture balances on-chain guarantees with off-chain orchestration. The **Mantle contracts** ensure that token movements and swaps are transparent and secure, while the **backend relayer** handles the glue between different chains and triggers the right actions at the right time. Next, we delve into the actual flow of tokens through this system, following the journey from sender to recipient.
 
-## 🤝 Contributing
+## Token & Asset Flows
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Let’s walk through the **core asset flow** in a typical Schnell cross-chain remittance, breaking it into stages. This example will illustrate the end-to-end journey: **a sender deposits USDC on Ethereum, the system bridges and converts it via a Mantle FX pool, and the recipient withdraws BUSD on the destination chain.**
 
-## 📄 License
+1. **Deposit on Source Chain:** The process starts with the sender on Ethereum (or any source chain that has a bridge into Mantle). The sender invokes a deposit transaction, sending their USDC into the Mantle bridge. In practice, this means calling the Mantle L1 Standard Bridge’s `depositERC20` function, specifying USDC as the token and the **Schnell Mantle contract address** as the recipient on L2 (so that the funds will arrive in Schnell’s contract on Mantle). This step locks the USDC on Ethereum and triggers the Optimistic Bridge to mint an equivalent amount of **USDC** on Mantle. *(For ease of user experience, our front-end abstracts this by prompting the user to approve and deposit in one go. Under the hood, the user’s wallet interacts with the Ethereum bridge contract.)*
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+2. **Conversion via Mantle FX Pool:** Once the USDC lands on Mantle (typically within seconds), Schnell’s smart contract and associated services take over. The `SchnellFundSender` contract on L2 receives the USDC (as it was the designated recipient of the bridge deposit). Now, if the goal is to convert to BUSD, the protocol executes the swap on Mantle: in the current implementation, our **backend service detects** the deposit (via the `FundsSent` event or by monitoring the contract’s balance) and knows the target output is BUSD. Using the available liquidity in the system’s **FX pool** (or a predefined 1:1 swap logic for equal-value stables), Schnell determines the output amount – typically 1 USDC → 1 BUSD (assuming both are \$1.00, adjusted for any fee). In a fully on-chain version, this would be an AMM swap: USDC would be exchanged for BUSD by interacting with a pool contract holding reserves of both. For the hackathon prototype, we simulate this by simply choosing the amount (e.g. 100 USDC becomes 100 BUSD) and preparing the BUSD for transfer. Now the **critical part**: initiating the cross-chain payout. The Schnell contract (or backend on its behalf) calls `initiateWithdrawalToL1` on Mantle, specifying the L2 BUSD token, the recipient’s L1 (or target chain) address, and the amount of BUSD. This call triggers Mantle’s bridge to begin withdrawing BUSD from L2. At this moment, the Schnell contract emits `WithdrawalInitiatedOnL2` – encapsulating the fact that “BUSD is leaving Mantle, destined for an address on L1.”
+
+3. **Cross-Chain Payout on Destination:** Depending on the destination chain, this step differs slightly. If the target is **Ethereum L1**, then the withdrawal initiated in step 2 will, after the required challenge window (for optimistic rollups), release BUSD on Ethereum to the specified recipient address. The recipient (if using an Ethereum wallet) will see BUSD in their wallet, delivered from the Mantle bridge contract. If the destination is **another chain (e.g. BNB Chain)**, Schnell’s relayer network steps in to complete the final leg. Our relayer, upon seeing the `WithdrawalInitiatedOnL2` event, recognizes that the intended recipient is on BNB Chain (this could be encoded in the extraData or via an internal lookup that the recipient’s address belongs to BNB Chain). Rather than waiting for an Ethereum release (which wouldn’t directly help on BNB Chain), the relayer immediately executes a **BUSD transfer on BNB Chain** to the recipient. In practice, we have a pool of BUSD liquidity pre-positioned on BNB Chain for this purpose. The recipient’s address on BNB Chain promptly receives the BUSD (this can happen within a minute of the initial send). Meanwhile, the BUSD withdrawn on Ethereum could be claimed by the relayer or used to refill the BNB liquidity pool (ensuring the system’s total assets remain balanced). In either case, from the **recipient’s perspective**, they get the  funds on their chain without needing to trust any custodian – it arrives as a normal on-chain token transfer.
+
+4. **Confirmation & Finalization:** Once the recipient has the funds, both parties are notified of completion. The sender can see a confirmation in the UI (or via an event) that, say, “100 USDC → 99.5 BUSD delivered to Bob” (if a small fee was taken). The recipient might get an alert from their wallet or the application. On the backend, we mark the transfer as completed. If using the optimistic bridge route to Ethereum, finalization involves calling a `finalizeWithdrawal` on L1 after the challenge period – our system can automate this or the user could invoke it if needed. This complexity is hidden during the happy path; for most practical purposes, especially when a liquidity network is used, the transfer is effectively instant and finalized, with the backend handling any post-process settlements asynchronously.
+
+Through these stages, Schnell orchestrates what would normally be **multiple user actions across different platforms into a single seamless transaction.**
+
+The above flow focuses on USDC→BUSD as a representative use case. The protocol supports any configured token pair and chain combination: for example, a user could send **ETH on Mantle and deliver WETH on Ethereum**, or send **MNT (Mantle’s native token) and have it emerge as ETH on L1** (using the same bridge without conversion). The modular design of token flow means new asset channels can be added by providing liquidity and oracle feeds for their exchange rate.
+
+## Relayer and Cross-Chain Mechanics
+
+A crucial part of Schnell is how cross-chain communication is handled reliably and efficiently. The **relayer network** is the off-chain backbone that links events on one chain to actions on another, effectively serving as the protocol’s courier service. Here we explain the mechanics and trust model of this system:
+
+* **Mantle ↔ Ethereum Bridge (Optimistic Rollup):** Mantle is an Optimistic Rollup, so it inherits the **security of Ethereum** but with a delay for finality (challenge period). When Schnell uses the Mantle bridge to deposit or withdraw tokens, it leverages the security guarantees of that system. For deposits (Ethereum to Mantle), the process is straightforward and fast – deposits are typically available on L2 within a block or two after the L1 transaction. For withdrawals (Mantle back to Ethereum), there is normally a challenge window (often \~7 days on mainnet Optimistic Rollups) before funds can be released on L1. In a pure protocol sense, if a user were to withdraw via Mantle’s standard route, they’d wait for finalization before the Ethereum-side transaction completes. **Schnell’s innovation is to avoid making the user wait** in most cases, by employing liquidity providers on the destination chain (be it Ethereum or another chain). Essentially, Schnell can *front-run* the withdrawal: our relayer sees the withdrawal intent on L2 and, rather than waiting 7 days, it uses its own liquidity to pay out the recipient immediately on the destination chain. Later, once the withdrawal is finalized, the relayer can claim the funds on Ethereum to reimburse itself. This technique (inspired by protocols like Hop and Connext) gives users the **speed of a liquidity network with the security of the canonical bridge** – if a relayer misbehaved or the message was fraudulent (which Optimism’s security would catch), the worst-case scenario is the relayer doesn’t get reimbursed, not that the user is cheated. In our hackathon demo on Mantle’s testnet, the challenge period is shortened and we control the relayer, so we effectively simulate near-instant finality.
+
+* **Relayer Network Operations:** The Schnell relayer network can consist of multiple independent nodes (validators) or just our own service in the initial phase. These nodes subscribe to events on Mantle (and potentially on other source chains in the future). When an event like `FundsSent` or `WithdrawalInitiatedOnL2` fires, relayers **validate and act**. For example:
+
+  * On `FundsSent(sender, recipient, token, amount)`: This might indicate a user deposited funds intended for conversion. Our relayer checks if the `recipient` is one of Schnell’s liquidity pool addresses on L2. If yes, it knows a conversion is requested. It could then read from on-chain or off-chain price feeds to calculate the output amount, and directly call `initiateWithdrawalToL1` on the Schnell contract to start moving the output asset out. In other words, the relayer automates the **swap + withdraw** transaction based on the user’s deposit event. (In future, this sequence could be done entirely by a smart contract with atomic transactions, but off-chain automation sufficed for the prototype.)
+  * On `WithdrawalInitiatedOnL2(l2Token, l1Recipient, l2Sender, amount, extraData)`: This event is emitted when tokens are being sent out of Mantle. Relayers interpret this as “User X’s transfer is leaving L2 for L1”. If the `l1Recipient` is on Ethereum and we have no faster route, we might do nothing further except perhaps notify the recipient to expect funds after finality. However, if `l1Recipient` actually represents a target on another chain (encoded in extraData or known via context), the relayer will **execute a transfer on that target chain**. In our USDC→BUSD example, the event told us BUSD was withdrawn to an address that corresponds to the user on BNB Chain. Our relayer (which has a wallet on BNB Chain with BUSD liquidity) immediately creates a BUSD transaction to that address for the given amount. This completes the transfer on the recipient’s chain, usually within a single block of that chain. The relayer then marks the event as “fulfilled”. If multiple relayer nodes exist, they could coordinate via a consensus mechanism (e.g., only act once a majority witnesses the event to avoid double-sending). In future iterations, we envision using a **decentralized message-passing protocol** (like Hyperlane or Chainlink CCIP) to carry a cryptographically secured message from Mantle to the target chain’s smart contract, which would then release funds from a liquidity pool contract – removing the need for a trusted relayer altogether.
+
+* **Security and Trust Assumptions:** In the current hackathon implementation, the relayer is **semi-trusted** – essentially run by our team. It has the authority to move funds from the Schnell liquidity pools on destination chains (since it holds the keys or controls the pool contracts). However, all its actions are verifiable by looking at on-chain events: if a relayer claims to have sent 100 BUSD to someone, the Mantle event log and the BNB Chain transaction can be checked to ensure consistency. To harden security, the plan is to require relayers to **stake collateral and sign attestations** of observed events. We could implement a slashing mechanism: if a relayer cheats or is malicious (e.g., doesn’t deliver funds after seeing a deposit), other nodes or observers could challenge it and slash its stake. Over time, Schnell aims to minimize trust by either decentralizing this network or integrating with existing cross-chain infrastructure. For instance, we could use **Axelar or Wormhole** to handle the cross-chain communication – Schnell would emit an event or call a contract that Axelar validators pick up and relay to a target-chain contract which then disburses the funds. This would replace our own relayer with a more decentralized set with its own token/security. The flexibility of our design means we aren’t tied to one approach: the core logic (bridge in, swap, bridge out) can plug into any secure messaging layer.
+
+* **Cross-Chain FX Pool Liquidity:** To execute instant swaps and payouts, liquidity is required on the chains involved. In our example, we needed a stash of BUSD on BNB Chain to pay out recipients before the bridged funds arrive. During the hackathon, we managed this simply (providing some BUSD liquidity ourselves for testing). In a production setting, this could be organized as a **liquidity provider system**: individuals or market makers could lock funds in a Schnell Pool on each chain (earning fees in return). For example, someone could provide 100k USDC on Ethereum and receive 100k BUSD on BNB Chain in a paired contract, enabling the protocol to swap between them. Providers would then earn a small fee on each transfer (similar to how Uniswap LPs earn trading fees). We also ensure that price oracles guard the pool: if one stable depegs or if currency rates shift, the protocol would not blindly swap 1:1. The **Pyth oracle** feed acts as a check – if, say, 1 BUSD is only worth 0.98 USDC due to market conditions, Schnell could adjust the payout or pause transfers until stability returns, protecting liquidity providers from arbitrage losses.
+
+* **Failure & Recovery:** The relayer and cross-chain design anticipates certain failure scenarios. If a relayer goes down or fails to act on an event, the system falls back to the normal optimistic bridge process – meaning a user’s funds will still arrive, just after the challenge period on Ethereum (or they can be manually retrieved). This ensures **no lost funds**, only potential delays. We log every event in our database and expose them via APIs, so if something is stuck, an operator or script can intervene. Additionally, in the event a particular chain’s liquidity pool is drained or unhealthy, the protocol can temporarily disable new transfers to that chain (via the supportedTokens toggle or a circuit-breaker on the front-end), alerting users and preventing a bad experience. These measures, combined with eventual consistency via the canonical bridges, give Schnell a robust posture: users either get the speed advantage, or in worst case they revert to standard secure bridging, but they *never lose funds* outright.
+
+In summary, the **Relayer & Cross-Chain layer** of Schnell makes the magic of instant cross-chain FX possible while carefully managing risk. It blends the strengths of optimistic bridges (security) with the convenience of liquidity networks (speed). As we move forward, further decentralizing this layer and integrating advanced cross-chain protocols will only increase Schnell’s security and reach. Now, having covered the technical mechanics, let’s explore some real-world applications and user scenarios that Schnell enables.
+
+## Use Cases
+
+Schnell unlocks a variety of powerful use cases by simplifying cross-chain, cross-currency transfers. Below are a few scenarios illustrating how different users and applications benefit from the protocol:
+
+* **Global Remittances – Family Transfers:** *Alice* is an expat working in the US who wants to send \$500 to her family in the Philippines on a regular basis. Alice holds USDC on Ethereum (from her exchanges or bank on-ramps). Her family prefers to receive funds as BUSD on BNB Chain, because local services and marketplaces commonly use BUSD (thanks to BSC’s low fees). Using Schnell, Alice enters the amount (\$500), selects “USDC on Ethereum” as the source and “BUSD on BNB Chain” as the target, and inputs her brother *Bob’s* BSC wallet address. She confirms the transaction – paying only a few dollars in Ethereum gas to initiate the bridge. Within a couple of minutes, Bob gets 500 BUSD in his BSC wallet. The protocol handled bridging to Mantle, swapping USD stablecoins, and bridging out to BSC behind the scenes. **Outcome:** Bob receives the money faster than a Western Union transfer (minutes vs days) and at a fraction of the cost (cents vs \$30+ fee). Alice didn’t have to learn about BSC or swap tokens manually; Schnell delivered an *“internet of money”* experience where value finds the most efficient path to its destination.
+
+* **Multi-Chain Yield Optimization – DeFi User:** *Charlie* is a DeFi trader who provides liquidity on various chains. Suppose Ethereum DeFi yields on USDC have dropped, but BSC or Mantle offer higher returns on BUSD or MNT. Charlie can use Schnell to **rebalance across chains quickly**. He withdraws 10,000 USDC from an Ethereum lending protocol and wants to deploy it as BUSD into a BSC yield farm. Doing this traditionally, he’d bridge USDC to BSC, then swap for BUSD – two transactions and exposure to slippage. With Schnell, Charlie specifies the transfer in one go: 10k USDC (Ethereum) → 10k BUSD (BSC). Schnell uses Mantle’s liquidity to swap and deliver BUSD to Charlie’s BSC address. Within one hour, Charlie has moved his capital and can stake the BUSD, all while incurring minimal slippage and perhaps a small fee (Schnell might charge say 0.1% or \$10, far less than what he might lose on a bad DEX trade for that size). **Outcome:** Schnell served as Charlie’s personal cross-chain market maker, optimizing his asset allocation seamlessly. In the future, this could even be automated – yield optimizers could call Schnell’s contracts to arbitrage or migrate liquidity in and out of chains based on real-time opportunities.
+
+* **Cross-Chain Payroll for Remote Workers:** A startup team is distributed across the US, Europe, and Asia. The company treasury is on Ethereum mainnet in USDC. At month’s end, they need to pay some contractors in Europe who prefer EURC (Euro stablecoin on e.g. Avalanche) and others in Asia who want BUSD on BSC. By integrating Schnell into their payout system, the company treasurer can execute a batch of transfers from the USDC treasury on Ethereum to each contractor’s desired currency and chain. For example, *Dave* in Germany receives EuroC on Avalanche, while *Elaine* in Singapore gets BUSD on BSC – all initiated from one USDC source. **Outcome:** The team saves a ton on transaction fees and time. Each contractor is paid in the currency that’s useful for them (avoiding extra conversions on their side). This kind of system could be built into payroll dApps or DAO tooling, and Schnell provides the infrastructure to make it trustless and efficient.
+
+* **Layer-2 On/Off-Ramp for Exchanges:** Consider a crypto exchange or a fintech app that wants to offer users the **best rates and speeds for withdrawals**. If a user holds USDC on the exchange (on Ethereum), instead of withdrawing via Ethereum (slow, expensive), the exchange can integrate Schnell to let the user withdraw on another chain cheaply. For instance, *Frank* uses an exchange and wants to withdraw 1000 USDC to his wallet, but he selects “Withdraw as BUSD on BSC (via Schnell)” option. The exchange internally uses Schnell: locks 1000 USDC from Frank’s balance, signals Schnell to deliver 1000 BUSD to Frank’s BSC address. Frank receives his funds in 2 minutes with maybe a \$1 equivalent fee, far better than paying \$20 Ethereum gas. The exchange benefits too – it offloads transactions to L2 (Mantle) and BSC, reducing strain on their hot wallets and providing a better user experience. **Outcome:** Exchanges and apps leveraging Schnell can gain a competitive edge by offering fast, cross-chain withdrawals or payments, all while abstracting away the complex swap/bridge steps from their end-users.
+
+These stories underscore Schnell’s **versatility**. From personal remittances to DeFi and enterprise use cases, the protocol provides a general-purpose rail for moving value in whatever form needed. What’s common across these scenarios is the emphasis on *speed, cost-saving, and simplicity*. Users don’t necessarily care about the technical differences between chains or tokens – they just want their value delivered where they need it. Schnell achieves that by handling the heavy lifting under the hood, proving out the promise of true interoperability in the blockchain ecosystem.
