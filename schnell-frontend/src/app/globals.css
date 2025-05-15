@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+/* Use direct CSS instead of @apply for the most critical styles */
+body {
+  background-color: #0E1116; /* Same as bg-brand-charcoal */
+  color: white;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Add this as a fallback */
+.bg-brand-charcoal {
+  background-color: #0E1116 !important;
+}
+
+.text-brand-teal {
+  color: #23FFD2 !important;
+}
+
+.bg-brand-teal {
+  background-color: #23FFD2 !important;
+}
